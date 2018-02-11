@@ -1,1 +1,81 @@
 # vue-component-dataTransfer for transferData.md
+
+子组件同级之间的传递，暂时没有有效的方法，可以学习使用vuex，完美解决子组件传递问题
+建议组件之间含有数据传递的写在同一个组件内
+
+效果诉求是：
+
+在子组件1的navbar导航栏内点击title切换界面，当点击的index为0时，即第一个item，此时共同的父组件内出现子组件2；点击子组件1的其他title，则子组件2消失
+
+a.子组件1 navbar.vue
+
+导航栏点击效果触发，用于保存当前的index
+
+    <div class="weui-tabbar__item"
+        v-for="(tabbarName,index) in tabbarNames" v-on:click="clickFun(tabbarName,index) ">
+   </div>
+
+通过clickFun方法将当前的index值通过emit传递，在父组件会循环遍历transferNav方法来找到传递的index值
+
+    methods:{
+        clickFun(tabbarName,index){
+            this.$emit('transferNav',index);
+        },
+    }
+
+
+
+此处还需要注意的是，当选中导航栏的title时，该状态应丢到sessionStorge里进行存取，该处并不是跳转的router新界面，为点击不同的title进行界面的消失或显示
+
+此处的传递值，也应从storge取出后进行跨组件传递，否则刷新后，该值即被清空
+设置的objStr是点击导航栏的index缓存数据
+
+    created(){
+        var a = sessionStorage.getItem('objStr');
+            if (a) {
+                this.$emit('transferNav',a);
+            }
+    },
+
+b.父组件 index.vue
+
+父组件中添加了navbar.vue和selfcenter.vue
+
+<!--底部导航栏-->
+   <navbar @transferNav="getNav"></navbar>
+
+<!--个人中心界面-->
+   <selfcenter :Indexmsg="Indexmsg"></selfcenter>
+
+
+    components:{
+         'navbar':navbar,
+         'selfcenter':selfcenter,
+     },
+
+@transferNav为通过该方法取出子组件的数据
+
+selfcenter即是通过Indexmsg来进行赋值到子组件中
+
+首先需要在data中进行声明该数据对象
+
+    Indexmsg:null,
+
+定义该方法，将子组件1中的数据取出，赋值给子组件2中的Indexmsg
+
+    //从navbar.vue中获取到点击导航栏到index信息
+    getNav(msg){
+        this.Indexmsg = msg;
+    },
+
+c.子组件2 selfcenter.vue
+
+子组件2的div通过判断数据Indexmsg是否为index为0来确定显隐性关系
+
+<div class="body-content" v-bind:class="{'display':Indexmsg==0}"></div>
+
+定义了Indexmsg后需要在data中进行声明
+
+此处用了props之后就不用在data中声明该数据变量了
+
+props:['Indexmsg']
